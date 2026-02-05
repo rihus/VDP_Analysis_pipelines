@@ -44,6 +44,7 @@ VDP_ANALYSIS = "all" #Options: "thresholding", "glb_percentile", "glb_mean", "gl
 #  "lb_percentile", lb_mean, lb_both, "hierarchical_kmeans", adaptive_kmeans, kmeans_both, "all"
 ##Option for signal-to-noise and mean-to-signal ratio calculations
 SNR_MSR = False # Options: True, False
+##Main directory containing all subjects data - default: cwd/example_data
 PARENT_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "example_data")
 # #Declare file names/patterns [here I'm using phantom images]
 fname_patterns = {'Non_corr':[r"phantom_129Xe\.nii\.gz$"],
