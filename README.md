@@ -16,3 +16,6 @@ To run:
 Just download the repository and define necessary file names. Required: 129Xe Ventilation Image (one or more of the uncorrected, N4-corrected, and FA-corrected), , kind of data (Cartesian or Spiral), kind of VDP analysis you want, if SNR is to be calculated etc.
 
 Main script provides thresholds and fit parameters for glb analysis used in Hussain et all., 2026.
+
+Author: Riaz Hussain, PhD
+Contact: riazhussain.phd@outlook.com
