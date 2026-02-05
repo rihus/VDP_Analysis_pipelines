@@ -5,32 +5,38 @@ Created on Thu Nov 30 7:45:48 2023
 
 @author: Riaz Hussain, PhD
 
-This script allows four types of analysis of the 129Xe ventilation MR images:
-    1. The 60% of the total image intesity mean thresholding
-    2. Generalized linear binning - 99th Percentile normalized
-    3. Generalized linear binning - Mean normalized
-    4. Hierarchical K-means clustering
-    5. Adaptive K-means clustering
-    6. Linear binning - mean normalized (fixed thresholds)
-    
+Please see/reference this paper:
+Riaz Hussain, Abdullah S. Bdaiwi, Joseph W. Plummer, Bilal I. Masokano, Matthew M. Willmering, Laura L. Walkup, Zackary I. Cleveland,
+Comparing Mean-anchored Generalized Linear Binning with Established Methods to Quantify Xenon-129 Ventilation Defect Percentage,
+Academic Radiology, Volume 33, Issue 2, 2026, Pages 569-585, ISSN 1076-6332,
+https://doi.org/10.1016/j.acra.2025.10.044.
+(https://www.sciencedirect.com/science/article/pii/S107663322501030X)
+
+This script allows six types of analysis for hyperpolarized 129Xe ventilation MR images:
+    1. Hierarchical K-means clustering (Kirby et al., Acad Radiol 2012)
+    2. Adaptive K-means clustering (Zha et al., Acad Radiol 2016 and 2018) 
+    3. The 60% of the total image intesity mean thresholding (Thomen et al., J. of CF 2017)
+    4. Generalized linear binning - 99th Percentile normalized (He et al., Acad Radiol 2020)
+    5. Linear binning - mean normalized [fixed thresholds] (Collier et al, ISMRM 2020) 
+    6. Generalized linear binning - Mean normalized (Hussain et al., Acad Radiol 2026)
+
     Last updated: Feb 5 2026
 
 """
 #%%Import Libraries and import master vdp_hvp functions file
 import os
 import re
-#Import file with all the vdp function
+#Import file with all the vdp functions
 from utils.master_vdp_functions_file import single_subj_analysis
-from utils.utils_funcs import append_save_txt2csv, append_save_snr_txts
 
 #%%Decalre analysis mode, subject directory names, MR Sequence type,
 ## Bias correction type, types of VDP/HVP analysis, SNR/MSR switch,
 ## Main directory, File name patterns, and thresholds
 ANALYSIS_MODE = "Single" # Options: "Single", "Batch"
 MR_SEQUENCE = "Spiral" # Options: "Cartesian", "Spiral"
-##Provide directory name/s with subject data (pattern or full names list)
+##Provide directory name/s containing subject data (pattern or full names list)
 ##Batch processing only
-SUBJ_DIR_NAMES = ""
+SUBJ_DIR_NAMES = ["sub_001", "sub_002", "sub_003"]
 ##Select bias field correction
 CORR_TYPE = "corrected" # Options: "Non_corr", "N4_corr", "FA_corr" (only for Spiral), "corrected", "all"
 ##VDP analysis correction
@@ -38,16 +44,16 @@ VDP_ANALYSIS = "all" #Options: "thresholding", "glb_percentile", "glb_mean", "gl
 #  "lb_percentile", lb_mean, lb_both, "hierarchical_kmeans", adaptive_kmeans, kmeans_both, "all"
 ##Option for signal-to-noise and mean-to-signal ratio calculations
 SNR_MSR = False # Options: True, False
-PARENT_DIR = ""
-# #Declare file names/patterns
-fname_patterns = {'Non_corr':[r"img_ventilation\.nii\.gz$"],
-    'N4_corr': [r"img_ventilation_N4\.nii\.gz$"],
-    'FA_corr': [r"img_ventilation_corrected\.nii\.gz$"],
-    'mask_file': [r"img_ventilation_mask\.nii\.gz$"],
-    'proton_file': [r"img_proton\.nii\.gz$"],
-    'proton_file_N4': [r"img_proton_N4\.nii\.gz$"]}
+PARENT_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "example_data")
+# #Declare file names/patterns [here I'm using phantom images]
+fname_patterns = {'Non_corr':[r"phantom_129Xe\.nii\.gz$"],
+    'N4_corr': [r"phantom_129Xe_N4\.nii\.gz$"],
+    'FA_corr': [r"phantom_129Xe_FA\.nii\.gz$"],
+    'mask_file': [r"phantom_129Xe_mask\.nii\.gz$"],
+    'proton_file': [r"phantom_1H\.nii\.gz$"],
+    'proton_file_N4': [r"phantom_1H_N4\.nii\.gz$"]}
 
-#%%Provide thresholds and fit parameters for glb
+#%%Provide thresholds and fit parameters for glb analysis
 CORR_SEQ_ANALYSIS = [CORR_TYPE, MR_SEQUENCE, VDP_ANALYSIS, SNR_MSR]
 # # Choose appropriate glb thresholds (Last Updated: 23 November 2024)
 if  CORR_SEQ_ANALYSIS[1] == "Spiral":
@@ -108,62 +114,5 @@ elif ANALYSIS_MODE == "Batch":
                 single_subj_analysis(subject_dir, CORR_SEQ_ANALYSIS, fname_patterns,
                                         glb_dicts)
     print(f"Total Subject analyzed: {NUM}")
-
-#%% ##Define defect/hyper/snr analysis file names and headings
-if  CORR_SEQ_ANALYSIS[1] == "Spiral":
-    rslts_files = [('Non_corr', 'thresholding_results', 'glb-percentile_percentages',
-                'glb-mean_percentages', 'hierarchical-kmeans_percentages',
-                'adaptive-kmeans_percentages', 'lb-mean_percentages'),
-                ('N4_corr', 'thresholding_results', 'glb-percentile_percentages',
-                 'glb-mean_percentages', 'hierarchical-kmeans_percentages',
-                 'adaptive-kmeans_percentages', 'lb-mean_percentages'),
-                ('FA_corr', 'thresholding_results', 'glb-percentile_percentages',
-                 'glb-mean_percentages', 'hierarchical-kmeans_percentages',
-                 'adaptive-kmeans_percentages', 'lb-mean_percentages')] #'lb-percentile_percentages',
-
-    vdp_headings = {'thresholding_results': ('Subject_id','VDP', 'HVP', 'NVP'),
-        'glb-percentile_percentages': ('Subject_id', 'VDP', 'LVP', 'NVP1', 'NVP2','EVP', 'HVP'),
-        'glb-mean_percentages': ('Subject_id', 'VDP', 'LVP', 'NVP1', 'NVP2','EVP', 'HVP'),
-        'hierarchical-kmeans_percentages': ('Subject_id', 'VDP', 'LVP', 'NVP1', 'NVP2','HVP'),
-        'adaptive-kmeans_percentages': ('Subject_id', 'VDR', 'LVR', 'MVR', 'HVR'),
-        'lb-mean_percentages': ('Subject_id', 'VDP', 'LVP', 'NVP1', 'NVP2','EVP', 'HVP')}
-    snr_data_files = [('Non_corr', 'meansig_sdbkg_overallSNR'),
-              ('N4_corr', 'meansig_sdbkg_overallSNR'),
-              ('FA_corr', 'meansig_sdbkg_overallSNR')]
-
-elif CORR_SEQ_ANALYSIS[1] == "Cartesian":
-    rslts_files = [('Non_corr', 'thresholding_results', 'glb-percentile_percentages',
-                'glb-mean_percentages', 'hierarchical-kmeans_percentages',
-                'adaptive-kmeans_percentages', 'lb-mean_percentages'),
-                ('N4_corr', 'thresholding_results', 'glb-percentile_percentages',
-                 'glb-mean_percentages', 'hierarchical-kmeans_percentages',
-                 'adaptive-kmeans_percentages', 'lb-mean_percentages')]
-
-    vdp_headings = {'thresholding_results': ('Subject_id','VDP', 'HVP', 'NVP'),
-        'glb-percentile_percentages': ('Subject_id', 'VDP', 'LVP', 'NVP1', 'NVP2','EVP', 'HVP'),
-        'glb-mean_percentages': ('Subject_id', 'VDP', 'LVP', 'NVP1', 'NVP2','EVP', 'HVP'),
-        'hierarchical-kmeans_percentages': ('Subject_id', 'VDP', 'LVP', 'NVP1', 'NVP2','HVP'),
-        'adaptive-kmeans_percentages': ('Subject_id', 'VDR', 'LVR', 'MVR', 'HVR'),
-        'lb-mean_percentages': ('Subject_id', 'VDP', 'LVP', 'NVP1', 'NVP2','EVP', 'HVP')}
-    snr_data_files = [('Non_corr', 'meansig_sdbkg_overallSNR'),
-              ('N4_corr', 'meansig_sdbkg_overallSNR')]
-
-#%% ##Gather vdp analysis results in csv
-for prefix, *suffixes in rslts_files:
-    for suffix in suffixes:
-        text_file_name = f'{prefix}_{suffix}.txt'
-        heading = vdp_headings.get(suffix, None)
-        if heading:
-            append_save_txt2csv(PARENT_DIR, text_file_name, heading,
-                                                    correction=prefix)
-
-#%% ##Gather SNR analysis results
-snr_headings = {'meansig_sdbkg_overallSNR': ('Subject_id','mean_signal','bkgd_sd', 'snr')}
-for prefix, *suffixes in snr_data_files:
-    for suffix in suffixes:
-        heading = snr_headings.get(suffix, None)
-        if heading:
-            append_save_snr_txts(PARENT_DIR, heading, correction=prefix,
-                                                    analysis_type=suffix)
 
 #%%
